@@ -21,11 +21,11 @@ config = {
 	"to_header": b"<laurentvial778@gmail.com>", # To: <alice@example.com>\r\n
 	"body": b"test", # Test Body.
 	"sender_name": b"Xavier Niel", # Nom de l'expéditeur (ex: b"John Doe" pour afficher "John Doe <email@domain.com>")
-	"from_email": b"xavier@sfr.fr", # Email d'expédition dans le header From (pour spoofing). 
+	"from_email": b"xavier@free.fr", # Email d'expédition dans le header From (pour spoofing). 
 	# ATTENTION: Gmail rejette les emails spoofés de gmail.com à cause de DMARC.
 	# Utilisez un domaine que vous contrôlez ou qui n'a pas de politique DMARC stricte.
 	# Si vide, utilise legitimate_site_address
-	"reply_to": b"reply@example.com", # Reply-To header (ex: b"reply@example.com" ou b"<reply@example.com>"). Si vide, pas de Reply-To header.
+	"reply_to": b"Xavier <reply@example.com>", # Reply-To header (ex: b"reply@example.com" ou b"<reply@example.com>"). Si vide, pas de Reply-To header.
 
 	# Optional. Set the raw email message you want to sent. It's usually used for replay attacks
 	"raw_email": b"", 
