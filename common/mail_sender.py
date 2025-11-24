@@ -39,22 +39,39 @@ class MailSender(object):
 	def establish_socket(self):
 		client_socket = socket(AF_INET, SOCK_STREAM)
 		print("Connecting "+ str(self.mail_server))
-		client_socket.connect(self.mail_server)
-		self.print_recv_msg(client_socket)
-
-		if self.starttls == True:
-			client_socket.send(b"ehlo "+ self.helo +b"\r\n")
-			self.print_send_msg("ehlo "+ self.helo.decode("utf-8")+"\r\n")
-			self.print_recv_msg(client_socket)
-
-			client_socket.send(b"starttls\r\n")
-			self.print_send_msg("starttls\r\n") 
-			self.print_recv_msg(client_socket)
-
-			tls_socket = ssl.wrap_socket(client_socket, ssl_version=ssl.PROTOCOL_TLS)
+		
+		# Détecter le port pour savoir si SSL implicite est nécessaire
+		port = self.mail_server[1] if isinstance(self.mail_server, tuple) else 25
+		
+		if port == 465:
+			# Port 465: SSL/TLS dès le début (SSL implicite)
+			client_socket.connect(self.mail_server)
+			# Compatible avec Python 3.12+ (ssl.wrap_socket a été supprimé)
+			context = ssl.create_default_context()
+			tls_socket = context.wrap_socket(client_socket, server_hostname=self.mail_server[0])
 			self.tls_socket = tls_socket
-
-		self.client_socket = client_socket
+			self.client_socket = tls_socket  # Utiliser directement le socket SSL
+			self.print_recv_msg(tls_socket)
+		else:
+			# Port 587 ou 25: Connexion normale puis STARTTLS si nécessaire
+			client_socket.connect(self.mail_server)
+			self.print_recv_msg(client_socket)
+			
+			if self.starttls == True:
+				client_socket.send(b"ehlo "+ self.helo +b"\r\n")
+				self.print_send_msg("ehlo "+ self.helo.decode("utf-8")+"\r\n")
+				self.print_recv_msg(client_socket)
+				
+				client_socket.send(b"starttls\r\n")
+				self.print_send_msg("starttls\r\n") 
+				self.print_recv_msg(client_socket)
+				
+				# Compatible avec Python 3.12+ (ssl.wrap_socket a été supprimé)
+				context = ssl.create_default_context()
+				tls_socket = context.wrap_socket(client_socket, server_hostname=self.mail_server[0])
+				self.tls_socket = tls_socket
+			
+			self.client_socket = client_socket
 
 	def send_smtp_cmds(self, client_socket):
 		client_socket.send(b"ehlo "+self.helo+b"\r\n")
@@ -144,7 +161,14 @@ class MailSender(object):
 	def send_email(self):
 		self.establish_socket()
 		try:
-			if self.starttls == True:
+			# Détecter le port pour savoir quel socket utiliser
+			port = self.mail_server[1] if isinstance(self.mail_server, tuple) else 25
+			
+			if port == 465:
+				# Port 465: utiliser directement tls_socket
+				self.send_smtp_cmds(self.tls_socket)
+				self.send_quit_cmd(self.tls_socket)
+			elif self.starttls == True:
 				self.send_smtp_cmds(self.tls_socket)
 				self.send_quit_cmd(self.tls_socket)
 			else:
