@@ -1,7 +1,7 @@
 config = {
 	"attacker_site": b"emailmaster.cloud", # attack.com
 	"legitimate_site_address": b"contact@emailmaster.cloud", # From header address displayed to the end-user
-	"victim_address": b"laurentvial778@gmail.com", # RCPT TO and message.To header address, 
+	"victim_address": b"mail@delavictime.com", # RCPT TO and message.To header address, 
 	"case_id": b"client_a3", #  You can find all case_id using -l option.
 
 	# The following fields are optional
@@ -17,9 +17,9 @@ config = {
 	},
 
 	# Optional. You can leave them empty or customize the email message header or body here
-	"subject_header": b"Bonjour, je suis Pierre Vial",  # Subject: Test espoofer\r\n
-	"to_header": b"<laurentvial778@gmail.com>", # To: <alice@example.com>\r\n
-	"body": b"test", # Test Body.
+	"subject_header": b"Remplacer par l'objet de l'email",  # Subject: Test espoofer\r\n
+	"to_header": b"<mail@delavictime.com>", # To: <alice@example.com>\r\n
+	"body": b"Remplacer par le corps de l'email", # Test Body.
 	"sender_name": b"Xavier Niel", # Nom de l'expéditeur (ex: b"John Doe" pour afficher "John Doe <email@domain.com>")
 	"from_email": b"xavier@free.fr", # Email d'expédition dans le header From (pour spoofing). 
 	# ATTENTION: Gmail rejette les emails spoofés de gmail.com à cause de DMARC.
