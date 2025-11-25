@@ -14,21 +14,268 @@ from common.common import *
 from common.mail_sender import MailSender
 from exploits_builder import ExploitsBuilder
 
+# Configuration des couleurs modernes - Thème sombre
+MODERN_COLORS = {
+    'bg_primary': '#1a1a1a',  # Fond principal très sombre
+    'bg_secondary': '#2d2d2d',  # Fond secondaire (cartes)
+    'bg_accent': '#3a3a3a',  # Fond accent
+    'bg_hover': '#404040',  # Fond au survol
+    'primary': '#4a9eff',  # Bleu moderne pour les éléments principaux
+    'primary_hover': '#5aaaff',
+    'success': '#28a745',  # Vert pour succès
+    'danger': '#dc3545',  # Rouge pour erreurs
+    'warning': '#ffc107',  # Jaune pour avertissements
+    'info': '#17a2b8',  # Cyan pour info
+    'text_primary': '#e0e0e0',  # Texte principal clair
+    'text_secondary': '#b0b0b0',  # Texte secondaire
+    'text_muted': '#808080',  # Texte atténué
+    'border': '#404040',  # Bordures
+    'shadow': '#00000080',  # Ombres plus prononcées
+    'input_bg': '#252525',  # Fond des champs de saisie
+    'input_border': '#404040'  # Bordure des champs
+}
+
 class EspooferGUI:
     def __init__(self, root):
         self.root = root
         self.root.title("Espoofer - Interface de Configuration")
-        self.root.geometry("900x800")
+        # Taille minimale
+        self.root.minsize(1000, 750)
+        # Ouvrir en plein écran par défaut
+        self.root.state('zoomed')  # Windows
+        # Pour Linux, utiliser: self.root.attributes('-zoomed', True)
+        
+        # Configuration du style moderne
+        self.setup_modern_style()
+        
+        # Configuration pour le redimensionnement
+        self.root.columnconfigure(0, weight=1)
+        self.root.rowconfigure(0, weight=1)
         
         # Variables pour stocker les valeurs
         self.config_vars = {}
         self.errors = []
+        self.attachments_list = []  # Liste des pièces jointes
         
         # Charger la configuration actuelle
         self.load_config()
         
+        # Créer le menu
+        self.create_menu()
+        
         # Créer l'interface
         self.create_widgets()
+        
+    def setup_modern_style(self):
+        """Configure un style moderne sombre pour l'interface"""
+        style = ttk.Style()
+        
+        # Essayer d'utiliser un thème moderne
+        try:
+            style.theme_use('clam')  # Thème plus moderne que 'default'
+        except:
+            pass
+        
+        # Configuration des couleurs de fond
+        self.root.configure(bg=MODERN_COLORS['bg_primary'])
+        
+        # Style pour les boutons principaux
+        style.configure('Modern.TButton',
+                       padding=(15, 8),
+                       font=('Segoe UI', 10, 'normal'),
+                       background=MODERN_COLORS['primary'],
+                       foreground='white',
+                       borderwidth=0,
+                       focuscolor='none')
+        style.map('Modern.TButton',
+                 background=[('active', MODERN_COLORS['primary_hover']),
+                           ('pressed', MODERN_COLORS['primary']),
+                           ('!active', MODERN_COLORS['primary'])],
+                 foreground=[('active', 'white'),
+                           ('!active', 'white')],
+                 bordercolor=[('active', MODERN_COLORS['primary']),
+                            ('!active', MODERN_COLORS['primary'])])
+        
+        # Style pour les boutons de succès
+        style.configure('Success.TButton',
+                       padding=(15, 8),
+                       font=('Segoe UI', 10, 'normal'),
+                       background=MODERN_COLORS['success'],
+                       foreground='white',
+                       borderwidth=0)
+        style.map('Success.TButton',
+                 background=[('active', '#34ce57'),
+                           ('pressed', MODERN_COLORS['success']),
+                           ('!active', MODERN_COLORS['success'])],
+                 foreground=[('active', 'white'),
+                           ('!active', 'white')])
+        
+        # Style pour les boutons de danger
+        style.configure('Danger.TButton',
+                       padding=(15, 8),
+                       font=('Segoe UI', 10, 'normal'),
+                       background=MODERN_COLORS['danger'],
+                       foreground='white',
+                       borderwidth=0)
+        style.map('Danger.TButton',
+                 background=[('active', '#e4606d'),
+                           ('pressed', MODERN_COLORS['danger']),
+                           ('!active', MODERN_COLORS['danger'])],
+                 foreground=[('active', 'white'),
+                           ('!active', 'white')])
+        
+        # Style pour les labels standards
+        style.configure('TLabel',
+                       font=('Segoe UI', 10),
+                       foreground=MODERN_COLORS['text_primary'],
+                       background=MODERN_COLORS['bg_primary'])
+        
+        # Style pour les labels de section
+        style.configure('Section.TLabel',
+                       font=('Segoe UI', 12, 'bold'),
+                       foreground=MODERN_COLORS['text_primary'],
+                       background=MODERN_COLORS['bg_secondary'])
+        
+        # Style pour les frames de carte
+        style.configure('Card.TFrame',
+                       background=MODERN_COLORS['bg_secondary'],
+                       relief='flat',
+                       borderwidth=0)
+        
+        # Style pour les Entry avec thème sombre
+        style.configure('Modern.TEntry',
+                       fieldbackground=MODERN_COLORS['input_bg'],
+                       foreground=MODERN_COLORS['text_primary'],
+                       borderwidth=1,
+                       relief='solid',
+                       padding=5,
+                       insertcolor=MODERN_COLORS['text_primary'])
+        style.map('Modern.TEntry',
+                 fieldbackground=[('focus', MODERN_COLORS['input_bg']),
+                               ('!focus', MODERN_COLORS['input_bg'])],
+                 bordercolor=[('focus', MODERN_COLORS['primary']),
+                            ('!focus', MODERN_COLORS['input_border'])])
+        
+        # Style pour les Combobox avec thème sombre
+        style.configure('Modern.TCombobox',
+                       fieldbackground=MODERN_COLORS['input_bg'],
+                       foreground=MODERN_COLORS['text_primary'],
+                       borderwidth=1,
+                       relief='solid',
+                       padding=5,
+                       arrowcolor=MODERN_COLORS['text_primary'])
+        style.map('Modern.TCombobox',
+                 fieldbackground=[('focus', MODERN_COLORS['input_bg']),
+                               ('!focus', MODERN_COLORS['input_bg'])],
+                 bordercolor=[('focus', MODERN_COLORS['primary']),
+                            ('!focus', MODERN_COLORS['input_border'])],
+                 arrowcolor=[('active', MODERN_COLORS['primary']),
+                           ('!active', MODERN_COLORS['text_primary'])])
+        
+        # Style pour les RadioButton
+        style.configure('Modern.TRadiobutton',
+                       font=('Segoe UI', 10),
+                       background=MODERN_COLORS['bg_secondary'],
+                       foreground=MODERN_COLORS['text_primary'],
+                       selectcolor=MODERN_COLORS['bg_secondary'])
+        style.map('Modern.TRadiobutton',
+                 background=[('active', MODERN_COLORS['bg_secondary']),
+                           ('selected', MODERN_COLORS['bg_secondary'])],
+                 foreground=[('active', MODERN_COLORS['text_primary']),
+                           ('selected', MODERN_COLORS['text_primary'])],
+                 indicatorcolor=[('selected', MODERN_COLORS['primary']),
+                               ('!selected', MODERN_COLORS['input_border'])])
+        
+        # Style pour les Checkbutton
+        style.configure('Modern.TCheckbutton',
+                       font=('Segoe UI', 10),
+                       background=MODERN_COLORS['bg_secondary'],
+                       foreground=MODERN_COLORS['text_primary'],
+                       selectcolor=MODERN_COLORS['bg_secondary'])
+        style.map('Modern.TCheckbutton',
+                 background=[('active', MODERN_COLORS['bg_secondary']),
+                           ('selected', MODERN_COLORS['bg_secondary'])],
+                 foreground=[('active', MODERN_COLORS['text_primary']),
+                           ('selected', MODERN_COLORS['text_primary'])],
+                 indicatorcolor=[('selected', MODERN_COLORS['primary']),
+                               ('!selected', MODERN_COLORS['input_border'])])
+        
+        # Style pour les Scrollbar
+        style.configure('TScrollbar',
+                       background=MODERN_COLORS['bg_accent'],
+                       troughcolor=MODERN_COLORS['bg_primary'],
+                       borderwidth=0,
+                       arrowcolor=MODERN_COLORS['text_secondary'],
+                       darkcolor=MODERN_COLORS['bg_accent'],
+                       lightcolor=MODERN_COLORS['bg_accent'])
+        style.map('TScrollbar',
+                 background=[('active', MODERN_COLORS['primary']),
+                           ('!active', MODERN_COLORS['bg_accent'])],
+                 arrowcolor=[('active', MODERN_COLORS['text_primary']),
+                           ('!active', MODERN_COLORS['text_secondary'])])
+        
+    def create_menu(self):
+        """Crée le menu de l'application"""
+        menubar = tk.Menu(self.root)
+        self.root.config(menu=menubar)
+        
+        # Menu Aide
+        help_menu = tk.Menu(menubar, tearoff=0)
+        menubar.add_cascade(label="Aide", menu=help_menu)
+        
+        # Afficher la version
+        try:
+            import version
+            version_str = version.__version__
+        except ImportError:
+            version_str = "Inconnue"
+        
+        help_menu.add_command(label=f"Version {version_str}", state=tk.DISABLED)
+        help_menu.add_separator()
+        
+        # Vérifier les mises à jour
+        try:
+            from updater import UpdateDialog, Updater
+            help_menu.add_command(label="Vérifier les mises à jour", command=self.check_updates)
+        except ImportError:
+            pass
+        
+        help_menu.add_separator()
+        help_menu.add_command(label="À propos", command=self.show_about)
+    
+    def check_updates(self):
+        """Vérifie manuellement les mises à jour"""
+        try:
+            from updater import UpdateDialog, Updater
+            updater = Updater()
+            has_update, latest_version, update_info = updater.check_for_updates()
+            
+            if has_update:
+                dialog = UpdateDialog(self.root, updater)
+                dialog.show_update_available(latest_version, update_info)
+            else:
+                messagebox.showinfo("Mise à jour", 
+                                   f"Vous utilisez la dernière version ({updater.current_version})")
+        except Exception as e:
+            messagebox.showerror("Erreur", f"Impossible de vérifier les mises à jour:\n{e}")
+    
+    def show_about(self):
+        """Affiche la boîte À propos"""
+        try:
+            import version
+            version_str = version.__version__
+        except ImportError:
+            version_str = "Inconnue"
+        
+        about_text = f"""Espoofer - Outil de test d'usurpation d'email
+
+Version: {version_str}
+
+Cet outil est destiné à des fins de test et d'éducation uniquement.
+Utilisez-le de manière responsable et légale.
+
+© 2024"""
+        messagebox.showinfo("À propos", about_text)
         
     def load_config(self):
         """Charge la configuration actuelle depuis config.py"""
@@ -37,9 +284,9 @@ class EspooferGUI:
     def create_widgets(self):
         """Crée l'interface utilisateur"""
         # Créer un Canvas avec Scrollbar pour permettre le défilement
-        canvas = tk.Canvas(self.root)
-        scrollbar = ttk.Scrollbar(self.root, orient="vertical", command=canvas.yview)
-        scrollable_frame = ttk.Frame(canvas)
+        canvas = tk.Canvas(self.root, bg=MODERN_COLORS['bg_primary'], highlightthickness=0)
+        scrollbar = ttk.Scrollbar(self.root, orient="vertical", command=canvas.yview, style='TScrollbar')
+        scrollable_frame = ttk.Frame(canvas, style='Card.TFrame')
         
         scrollable_frame.bind(
             "<Configure>",
@@ -57,42 +304,80 @@ class EspooferGUI:
         
         # Mettre à jour la largeur du scrollable_frame quand le canvas change de taille
         def configure_scroll_region(event):
-            canvas.configure(scrollregion=canvas.bbox("all"))
             # Ajuster la largeur du scrollable_frame à la largeur du canvas
             canvas_width = event.width
             canvas.itemconfig(canvas_window, width=canvas_width)
+            # Mettre à jour la région de défilement
+            canvas.configure(scrollregion=canvas.bbox("all"))
         
-        canvas.bind('<Configure>', configure_scroll_region)
+        def on_canvas_configure(event):
+            """Gère le redimensionnement du canvas"""
+            canvas_width = event.width
+            canvas.itemconfig(canvas_window, width=canvas_width)
         
-        # Frame principal avec padding
-        main_frame = ttk.Frame(scrollable_frame, padding="10")
+        canvas.bind('<Configure>', on_canvas_configure)
+        scrollable_frame.bind('<Configure>', configure_scroll_region)
+        
+        # Frame principal avec padding amélioré et fond moderne
+        main_frame = ttk.Frame(scrollable_frame, padding="20", style='Card.TFrame')
         main_frame.grid(row=0, column=0, sticky=(tk.W, tk.E, tk.N, tk.S))
-        main_frame.columnconfigure(1, weight=1)
+        # 2 colonnes principales : gauche pour les champs, droite pour erreurs/logs/boutons
+        main_frame.columnconfigure(0, weight=2, minsize=500)  # Colonne gauche (champs)
+        main_frame.columnconfigure(1, weight=1, minsize=400)  # Colonne droite (erreurs/logs/boutons)
+        # S'assurer que le frame principal s'étire avec le canvas
+        scrollable_frame.columnconfigure(0, weight=1)
+        
+        # Frame pour la colonne gauche (tous les champs)
+        left_frame = ttk.Frame(main_frame, style='Card.TFrame')
+        left_frame.grid(row=0, column=0, sticky=(tk.W, tk.E, tk.N, tk.S), padx=(0, 10))
+        left_frame.columnconfigure(0, weight=1)  # Une seule colonne qui s'étire
+        
+        # Frame pour la colonne droite (erreurs, logs, boutons)
+        right_frame = ttk.Frame(main_frame, style='Card.TFrame')
+        right_frame.grid(row=0, column=1, sticky=(tk.W, tk.E, tk.N, tk.S))
+        right_frame.columnconfigure(0, weight=1)
         
         # Lier la molette de la souris au canvas
         def _on_mousewheel(event):
             canvas.yview_scroll(int(-1*(event.delta/120)), "units")
         canvas.bind_all("<MouseWheel>", _on_mousewheel)
         
-        row = 0
+        # ========== COLONNE GAUCHE : CHAMPS ==========
+        left_row = 0
         
-        # Titre
-        title_label = ttk.Label(main_frame, text="Configuration Espoofer", font=("Arial", 16, "bold"))
-        title_label.grid(row=row, column=0, columnspan=2, pady=(0, 20))
-        row += 1
+        # Section Mode avec style moderne
+        mode_section_frame = ttk.Frame(left_frame, style='Card.TFrame')
+        mode_section_frame.grid(row=left_row, column=0, columnspan=2, sticky=(tk.W, tk.E), pady=(0, 15))
+        mode_section_frame.columnconfigure(1, weight=1)
         
-        # Mode de fonctionnement
-        ttk.Label(main_frame, text="Mode:").grid(row=row, column=0, sticky=tk.W, pady=5)
+        ttk.Label(mode_section_frame, text="⚙️ Mode:", style='Section.TLabel').grid(row=0, column=0, sticky=tk.W, pady=(8, 4), padx=10)
         self.mode_var = tk.StringVar(value="c")  # Mode client par défaut
-        mode_frame = ttk.Frame(main_frame)
-        mode_frame.grid(row=row, column=1, sticky=tk.W, pady=5)
-        ttk.Radiobutton(mode_frame, text="Serveur (s)", variable=self.mode_var, value="s", command=self.on_mode_change).pack(side=tk.LEFT, padx=5)
-        ttk.Radiobutton(mode_frame, text="Client (c)", variable=self.mode_var, value="c", command=self.on_mode_change).pack(side=tk.LEFT, padx=5)
-        ttk.Radiobutton(mode_frame, text="Manuel (m)", variable=self.mode_var, value="m", command=self.on_mode_change).pack(side=tk.LEFT, padx=5)
-        row += 1
+        mode_frame = ttk.Frame(mode_section_frame, style='Card.TFrame')
+        mode_frame.grid(row=0, column=1, sticky=(tk.W, tk.E), pady=10, padx=(5, 10))
+        mode_frame.columnconfigure(0, weight=0)
+        mode_frame.columnconfigure(1, weight=0)
+        mode_frame.columnconfigure(2, weight=0)
         
-        # Case ID avec descriptions en français
-        ttk.Label(main_frame, text="ID du Cas:").grid(row=row, column=0, sticky=tk.W, pady=5)
+        # Style moderne pour les radio buttons
+        style = ttk.Style()
+        style.configure('Modern.TRadiobutton',
+                       font=('Segoe UI', 10),
+                       background=MODERN_COLORS['bg_secondary'])
+        
+        ttk.Radiobutton(mode_frame, text="🖥️ Serveur (s)", variable=self.mode_var, value="s", 
+                       command=self.on_mode_change, style='Modern.TRadiobutton').grid(row=0, column=0, padx=8)
+        ttk.Radiobutton(mode_frame, text="💻 Client (c)", variable=self.mode_var, value="c", 
+                       command=self.on_mode_change, style='Modern.TRadiobutton').grid(row=0, column=1, padx=8)
+        ttk.Radiobutton(mode_frame, text="✋ Manuel (m)", variable=self.mode_var, value="m", 
+                       command=self.on_mode_change, style='Modern.TRadiobutton').grid(row=0, column=2, padx=8)
+        left_row += 1
+        
+        # Case ID avec descriptions en français - style moderne
+        case_section_frame = ttk.Frame(left_frame, style='Card.TFrame')
+        case_section_frame.grid(row=left_row, column=0, sticky=(tk.W, tk.E), pady=(0, 15))
+        case_section_frame.columnconfigure(0, weight=1)
+        
+        ttk.Label(case_section_frame, text="📋 ID du Cas", font=('Segoe UI', 10)).grid(row=0, column=0, sticky=tk.W, pady=(8, 4), padx=10)
         self.case_id_var = tk.StringVar(value=self.current_config.get("case_id", b"").decode("utf-8"))
         
         # Mapping des cas vers leurs descriptions en français
@@ -134,104 +419,182 @@ class EspooferGUI:
         current_display = self.case_id_to_display.get(current_case_id, current_case_id if current_case_id else "")
         
         self.case_id_combo_var = tk.StringVar(value=current_display)
-        self.case_id_combo = ttk.Combobox(main_frame, textvariable=self.case_id_combo_var, 
-                                          values=self.case_display_values, width=40, state="readonly")
-        self.case_id_combo.grid(row=row, column=1, sticky=(tk.W, tk.E), pady=5)
+        self.case_id_combo = ttk.Combobox(case_section_frame, textvariable=self.case_id_combo_var, 
+                                          values=self.case_display_values, state="readonly",
+                                          style='Modern.TCombobox', font=('Segoe UI', 10))
+        self.case_id_combo.grid(row=1, column=0, sticky=(tk.W, tk.E), pady=(0, 8), padx=10)
         self.case_id_combo.bind("<<ComboboxSelected>>", self.on_case_selected)
-        row += 1
+        left_row += 1
+        
+        # Section Informations générales
+        self.general_section_frame = ttk.Frame(left_frame, style='Card.TFrame')
+        self.general_section_frame.grid(row=left_row, column=0, sticky=(tk.W, tk.E), pady=(0, 15))
+        self.general_section_frame.columnconfigure(0, weight=1)
+        self.general_section_frame.columnconfigure(1, weight=1)
+        
+        general_title = tk.Label(self.general_section_frame,
+                                 text="📝 Informations Générales",
+                                 font=("Segoe UI", 13, "bold"),
+                                 bg=MODERN_COLORS['bg_secondary'],
+                                 fg=MODERN_COLORS['primary'])
+        general_title.grid(row=0, column=0, sticky=tk.W, pady=(10, 15), padx=10)
+        
+        gen_row = 1
         
         # Attacker Site (pour mode server)
-        self.attacker_site_label = ttk.Label(main_frame, text="Site Attaquant:")
-        self.attacker_site_label.grid(row=row, column=0, sticky=tk.W, pady=5)
+        self.attacker_site_label = ttk.Label(self.general_section_frame, text="🎯 Site Attaquant:", font=('Segoe UI', 10))
+        self.attacker_site_label.grid(row=gen_row, column=0, sticky=tk.W, pady=(8, 4), padx=10)
         self.attacker_site_var = tk.StringVar(value=self.current_config.get("attacker_site", b"").decode("utf-8"))
-        self.attacker_site_entry = ttk.Entry(main_frame, textvariable=self.attacker_site_var, width=40)
-        self.attacker_site_entry.grid(row=row, column=1, sticky=(tk.W, tk.E), pady=5)
-        row += 1
+        self.attacker_site_entry = ttk.Entry(self.general_section_frame, textvariable=self.attacker_site_var,
+                                             style='Modern.TEntry', font=('Segoe UI', 10))
+        self.attacker_site_entry.grid(row=gen_row+1, column=0, sticky=(tk.W, tk.E), pady=(0, 8), padx=10)
+        gen_row += 2
         
-        # Legitimate Site Address
-        ttk.Label(main_frame, text="Adresse du Site Légitime:").grid(row=row, column=0, sticky=tk.W, pady=5)
+        # Legitimate Site Address et Victim Address côte à côte
+        ttk.Label(self.general_section_frame, text="✅ Adresse du Site Légitime", font=('Segoe UI', 10)).grid(row=gen_row, column=0, sticky=(tk.W, tk.N), pady=(8, 4), padx=10)
+        ttk.Label(self.general_section_frame, text="👤 Adresse de la Victime", font=('Segoe UI', 10)).grid(row=gen_row, column=1, sticky=(tk.W, tk.N), pady=(8, 4), padx=10)
         self.legitimate_site_var = tk.StringVar(value=self.current_config.get("legitimate_site_address", b"").decode("utf-8"))
-        ttk.Entry(main_frame, textvariable=self.legitimate_site_var, width=40).grid(row=row, column=1, sticky=(tk.W, tk.E), pady=5)
-        row += 1
+        ttk.Entry(self.general_section_frame, textvariable=self.legitimate_site_var,
+                 style='Modern.TEntry', font=('Segoe UI', 10)).grid(row=gen_row+1, column=0, sticky=(tk.W, tk.E), pady=(0, 8), padx=10)
         
-        # Victim Address
-        ttk.Label(main_frame, text="Adresse de la Victime:").grid(row=row, column=0, sticky=tk.W, pady=5)
+        victim_frame = ttk.Frame(self.general_section_frame, style='Card.TFrame')
+        victim_frame.grid(row=gen_row+1, column=1, sticky=(tk.W, tk.E), pady=(0, 8), padx=10)
+        victim_frame.columnconfigure(0, weight=1)
         self.victim_address_var = tk.StringVar(value=self.current_config.get("victim_address", b"").decode("utf-8"))
-        ttk.Entry(main_frame, textvariable=self.victim_address_var, width=40).grid(row=row, column=1, sticky=(tk.W, tk.E), pady=5)
-        row += 1
+        self.victim_address_var.trace_add("write", self.on_victim_address_change)
+        self.victim_address_entry = ttk.Entry(victim_frame, textvariable=self.victim_address_var,
+                                             style='Modern.TEntry', font=('Segoe UI', 10))
+        self.victim_address_entry.grid(row=0, column=0, sticky=(tk.W, tk.E))
+        self.victim_address_warning_label = tk.Label(victim_frame, text="", 
+                                                     foreground=MODERN_COLORS['warning'], 
+                                                     font=("Segoe UI", 8), 
+                                                     bg=MODERN_COLORS['bg_secondary'])
+        self.victim_address_warning_label.grid(row=1, column=0, sticky=tk.W)
+        gen_row += 2
+        left_row += 1
         
-        # Séparateur - Server Mode
-        self.server_separator = ttk.Separator(main_frame, orient=tk.HORIZONTAL)
-        self.server_separator.grid(row=row, column=0, columnspan=2, sticky=(tk.W, tk.E), pady=10)
-        row += 1
-        self.server_mode_label = ttk.Label(main_frame, text="Configuration Mode Serveur:", font=("Arial", 12, "bold"))
-        self.server_mode_label.grid(row=row, column=0, columnspan=2, sticky=tk.W, pady=5)
-        row += 1
+        # Section Server Mode avec style moderne
+        self.server_separator = ttk.Separator(left_frame, orient=tk.HORIZONTAL)
+        self.server_separator.grid(row=left_row, column=0, sticky=(tk.W, tk.E), pady=20)
+        left_row += 1
         
+        self.server_section_frame = ttk.Frame(left_frame, style='Card.TFrame')
+        self.server_section_frame.grid(row=left_row, column=0, sticky=(tk.W, tk.E), pady=(0, 15))
+        self.server_section_frame.columnconfigure(0, weight=1)
+        
+        self.server_mode_label = tk.Label(self.server_section_frame, 
+                                          text="🖥️ Configuration Mode Serveur", 
+                                          font=("Segoe UI", 13, "bold"),
+                                          bg=MODERN_COLORS['bg_secondary'],
+                                          fg=MODERN_COLORS['primary'])
+        self.server_mode_label.grid(row=0, column=0, sticky=tk.W, pady=(10, 15), padx=10)
+        
+        server_row = 1
         server_mode = self.current_config.get("server_mode", {})
-        self.recv_mail_server_label = ttk.Label(main_frame, text="Serveur de Réception:")
-        self.recv_mail_server_label.grid(row=row, column=0, sticky=tk.W, pady=5)
+        self.recv_mail_server_label = ttk.Label(self.server_section_frame, text="📡 Serveur de Réception:", font=('Segoe UI', 10))
+        self.recv_mail_server_label.grid(row=server_row, column=0, sticky=tk.W, pady=(8, 4), padx=10)
         self.recv_mail_server_var = tk.StringVar(value=server_mode.get("recv_mail_server", ""))
-        self.recv_mail_server_entry = ttk.Entry(main_frame, textvariable=self.recv_mail_server_var, width=40)
-        self.recv_mail_server_entry.grid(row=row, column=1, sticky=(tk.W, tk.E), pady=5)
-        row += 1
+        self.recv_mail_server_entry = ttk.Entry(self.server_section_frame, textvariable=self.recv_mail_server_var,
+                                                style='Modern.TEntry', font=('Segoe UI', 10))
+        self.recv_mail_server_entry.grid(row=server_row+1, column=0, sticky=(tk.W, tk.E), pady=(0, 8), padx=10)
+        server_row += 2
         
-        self.recv_mail_server_port_label = ttk.Label(main_frame, text="Port du Serveur de Réception:")
-        self.recv_mail_server_port_label.grid(row=row, column=0, sticky=tk.W, pady=5)
+        self.recv_mail_server_port_label = ttk.Label(self.server_section_frame, text="🔌 Port:", font=('Segoe UI', 10))
+        self.recv_mail_server_port_label.grid(row=server_row, column=0, sticky=tk.W, pady=(8, 4), padx=10)
         self.recv_mail_server_port_var = tk.StringVar(value=str(server_mode.get("recv_mail_server_port", 25)))
-        self.recv_mail_server_port_entry = ttk.Entry(main_frame, textvariable=self.recv_mail_server_port_var, width=40)
-        self.recv_mail_server_port_entry.grid(row=row, column=1, sticky=(tk.W, tk.E), pady=5)
-        row += 1
+        self.recv_mail_server_port_entry = ttk.Entry(self.server_section_frame, textvariable=self.recv_mail_server_port_var,
+                                                     style='Modern.TEntry', font=('Segoe UI', 10))
+        self.recv_mail_server_port_entry.grid(row=server_row+1, column=0, sticky=(tk.W, tk.E), pady=(0, 8), padx=10)
+        server_row += 2
         
         self.starttls_var = tk.BooleanVar(value=server_mode.get("starttls", False))
-        self.starttls_checkbutton = ttk.Checkbutton(main_frame, text="Activer STARTTLS", variable=self.starttls_var)
-        self.starttls_checkbutton.grid(row=row, column=0, columnspan=2, sticky=tk.W, pady=5)
-        row += 1
+        style.configure('Modern.TCheckbutton',
+                       font=('Segoe UI', 10),
+                       background=MODERN_COLORS['bg_secondary'])
+        self.starttls_checkbutton = ttk.Checkbutton(self.server_section_frame, text="🔒 Activer STARTTLS",
+                                                    variable=self.starttls_var, style='Modern.TCheckbutton')
+        self.starttls_checkbutton.grid(row=server_row, column=0, sticky=tk.W, pady=(8, 8), padx=10)
+        left_row += 1
         
-        # Séparateur - Client Mode
-        self.client_separator = ttk.Separator(main_frame, orient=tk.HORIZONTAL)
-        self.client_separator.grid(row=row, column=0, columnspan=2, sticky=(tk.W, tk.E), pady=10)
-        row += 1
-        self.client_mode_label = ttk.Label(main_frame, text="Configuration Mode Client:", font=("Arial", 12, "bold"))
-        self.client_mode_label.grid(row=row, column=0, columnspan=2, sticky=tk.W, pady=5)
-        row += 1
+        # Section Client Mode avec style moderne
+        self.client_separator = ttk.Separator(left_frame, orient=tk.HORIZONTAL)
+        self.client_separator.grid(row=left_row, column=0, sticky=(tk.W, tk.E), pady=20)
+        left_row += 1
         
+        self.client_section_frame = ttk.Frame(left_frame, style='Card.TFrame')
+        self.client_section_frame.grid(row=left_row, column=0, sticky=(tk.W, tk.E), pady=(0, 15))
+        self.client_section_frame.columnconfigure(0, weight=1)
+        self.client_section_frame.columnconfigure(1, weight=1)
+        
+        self.client_mode_label = tk.Label(self.client_section_frame,
+                                         text="💻 Configuration Mode Client",
+                                         font=("Segoe UI", 13, "bold"),
+                                         bg=MODERN_COLORS['bg_secondary'],
+                                         fg=MODERN_COLORS['primary'])
+        self.client_mode_label.grid(row=0, column=0, sticky=tk.W, pady=(10, 15), padx=10)
+        
+        client_row = 1
         client_mode = self.current_config.get("client_mode", {})
         sending_server = client_mode.get("sending_server", ("", 587))
-        self.sending_server_label = ttk.Label(main_frame, text="Serveur d'Envoi:")
-        self.sending_server_label.grid(row=row, column=0, sticky=tk.W, pady=5)
-        self.sending_server_frame = ttk.Frame(main_frame)
-        self.sending_server_frame.grid(row=row, column=1, sticky=(tk.W, tk.E), pady=5)
+        self.sending_server_label = ttk.Label(self.client_section_frame, text="📤 Serveur d'Envoi", font=('Segoe UI', 10))
+        self.sending_server_label.grid(row=client_row, column=0, sticky=tk.W, pady=(8, 4), padx=10)
+        self.sending_server_frame = ttk.Frame(self.client_section_frame, style='Card.TFrame')
+        self.sending_server_frame.grid(row=client_row+1, column=0, sticky=(tk.W, tk.E), pady=(0, 8), padx=10)
+        self.sending_server_frame.columnconfigure(0, weight=3)
+        self.sending_server_frame.columnconfigure(2, weight=1)
         self.sending_server_host_var = tk.StringVar(value=sending_server[0] if isinstance(sending_server, tuple) else "")
         self.sending_server_port_var = tk.StringVar(value=str(sending_server[1] if isinstance(sending_server, tuple) else 587))
-        self.sending_server_host_entry = ttk.Entry(self.sending_server_frame, textvariable=self.sending_server_host_var, width=25)
-        self.sending_server_host_entry.pack(side=tk.LEFT, padx=(0, 5))
-        ttk.Label(self.sending_server_frame, text=":").pack(side=tk.LEFT)
-        self.sending_server_port_entry = ttk.Entry(self.sending_server_frame, textvariable=self.sending_server_port_var, width=10)
-        self.sending_server_port_entry.pack(side=tk.LEFT, padx=(5, 0))
-        row += 1
+        self.sending_server_host_entry = ttk.Entry(self.sending_server_frame, textvariable=self.sending_server_host_var,
+                                                   style='Modern.TEntry', font=('Segoe UI', 10))
+        self.sending_server_host_entry.grid(row=0, column=0, sticky=(tk.W, tk.E), padx=(0, 5))
+        ttk.Label(self.sending_server_frame, text=":", font=('Segoe UI', 10), 
+                 background=MODERN_COLORS['bg_secondary'],
+                 foreground=MODERN_COLORS['text_primary']).grid(row=0, column=1, padx=2)
+        self.sending_server_port_entry = ttk.Entry(self.sending_server_frame, textvariable=self.sending_server_port_var,
+                                                   style='Modern.TEntry', font=('Segoe UI', 10))
+        self.sending_server_port_entry.grid(row=0, column=2, sticky=(tk.W, tk.E), padx=(5, 0))
+        client_row += 2
         
-        self.username_label = ttk.Label(main_frame, text="Nom d'utilisateur:")
-        self.username_label.grid(row=row, column=0, sticky=tk.W, pady=5)
+        # Nom d'utilisateur et Mot de passe côte à côte
+        self.username_label = ttk.Label(self.client_section_frame, text="👤 Nom d'utilisateur", font=('Segoe UI', 10))
+        self.username_label.grid(row=client_row, column=0, sticky=(tk.W, tk.N), pady=(8, 4), padx=10)
+        self.password_label = ttk.Label(self.client_section_frame, text="🔑 Mot de passe", font=('Segoe UI', 10))
+        self.password_label.grid(row=client_row, column=1, sticky=(tk.W, tk.N), pady=(8, 4), padx=10)
+        
         self.username_var = tk.StringVar(value=client_mode.get("username", b"").decode("utf-8"))
-        self.username_entry = ttk.Entry(main_frame, textvariable=self.username_var, width=40)
-        self.username_entry.grid(row=row, column=1, sticky=(tk.W, tk.E), pady=5)
-        row += 1
+        self.username_entry = ttk.Entry(self.client_section_frame, textvariable=self.username_var,
+                                       style='Modern.TEntry', font=('Segoe UI', 10))
+        self.username_entry.grid(row=client_row+1, column=0, sticky=(tk.W, tk.E), pady=(0, 8), padx=10)
         
-        self.password_label = ttk.Label(main_frame, text="Mot de passe:")
-        self.password_label.grid(row=row, column=0, sticky=tk.W, pady=5)
         self.password_var = tk.StringVar(value=client_mode.get("password", b"").decode("utf-8"))
-        self.password_entry = ttk.Entry(main_frame, textvariable=self.password_var, width=40, show="*")
-        self.password_entry.grid(row=row, column=1, sticky=(tk.W, tk.E), pady=5)
-        row += 1
+        self.password_entry = ttk.Entry(self.client_section_frame, textvariable=self.password_var, show="*",
+                                       style='Modern.TEntry', font=('Segoe UI', 10))
+        self.password_entry.grid(row=client_row+1, column=1, sticky=(tk.W, tk.E), pady=(0, 8), padx=10)
+        client_row += 2
+        left_row += 1
         
-        # Séparateur - Email Content
-        ttk.Separator(main_frame, orient=tk.HORIZONTAL).grid(row=row, column=0, columnspan=2, sticky=(tk.W, tk.E), pady=10)
-        row += 1
-        ttk.Label(main_frame, text="Contenu de l'Email:", font=("Arial", 12, "bold")).grid(row=row, column=0, columnspan=2, sticky=tk.W, pady=5)
-        row += 1
+        # Section Contenu Email avec style moderne
+        ttk.Separator(left_frame, orient=tk.HORIZONTAL).grid(row=left_row, column=0, sticky=(tk.W, tk.E), pady=20)
+        left_row += 1
         
-        ttk.Label(main_frame, text="En-tête Sujet:").grid(row=row, column=0, sticky=tk.W, pady=5)
+        self.email_section_frame = ttk.Frame(left_frame, style='Card.TFrame')
+        self.email_section_frame.grid(row=left_row, column=0, sticky=(tk.W, tk.E), pady=(0, 15))
+        self.email_section_frame.columnconfigure(0, weight=1)
+        self.email_section_frame.columnconfigure(1, weight=1)
+        
+        email_title = tk.Label(self.email_section_frame,
+                              text="✉️ Contenu de l'Email",
+                              font=("Segoe UI", 13, "bold"),
+                              bg=MODERN_COLORS['bg_secondary'],
+                              fg=MODERN_COLORS['primary'])
+        email_title.grid(row=0, column=0, sticky=tk.W, pady=(10, 15), padx=10)
+        
+        email_row = 1
+        
+        # En-tête Sujet et En-tête À côte à côte
+        ttk.Label(self.email_section_frame, text="📌 En-tête Sujet", font=('Segoe UI', 10)).grid(row=email_row, column=0, sticky=(tk.W, tk.N), pady=(8, 4), padx=10)
+        ttk.Label(self.email_section_frame, text="📬 En-tête À", font=('Segoe UI', 10)).grid(row=email_row, column=1, sticky=(tk.W, tk.N), pady=(8, 4), padx=10)
+        
         # Extraire juste le texte du sujet (sans "Subject: " et "\r\n")
         subject_raw = self.current_config.get("subject_header", b"").decode("utf-8")
         if subject_raw.startswith("Subject:"):
@@ -243,16 +606,27 @@ class EspooferGUI:
         else:
             subject_text = subject_raw.strip()
         self.subject_header_var = tk.StringVar(value=subject_text)
-        ttk.Entry(main_frame, textvariable=self.subject_header_var, width=40).grid(row=row, column=1, sticky=(tk.W, tk.E), pady=5)
-        row += 1
+        ttk.Entry(self.email_section_frame, textvariable=self.subject_header_var,
+                 style='Modern.TEntry', font=('Segoe UI', 10)).grid(row=email_row+1, column=0, sticky=(tk.W, tk.E), pady=(0, 8), padx=10)
         
-        ttk.Label(main_frame, text="En-tête À:").grid(row=row, column=0, sticky=tk.W, pady=5)
         self.to_header_var = tk.StringVar(value=self.current_config.get("to_header", b"").decode("utf-8"))
-        ttk.Entry(main_frame, textvariable=self.to_header_var, width=40).grid(row=row, column=1, sticky=(tk.W, tk.E), pady=5)
-        row += 1
+        ttk.Entry(self.email_section_frame, textvariable=self.to_header_var,
+                 style='Modern.TEntry', font=('Segoe UI', 10)).grid(row=email_row+1, column=1, sticky=(tk.W, tk.E), pady=(0, 8), padx=10)
+        email_row += 2
         
-        ttk.Label(main_frame, text="Corps:").grid(row=row, column=0, sticky=tk.W, pady=5)
-        self.body_text = scrolledtext.ScrolledText(main_frame, width=40, height=5)
+        ttk.Label(self.email_section_frame, text="📄 Corps", font=('Segoe UI', 10)).grid(row=email_row, column=0, columnspan=2, sticky=tk.W, pady=(8, 4), padx=10)
+        self.body_text = scrolledtext.ScrolledText(self.email_section_frame, height=6, wrap=tk.WORD,
+                                                   font=('Segoe UI', 10),
+                                                   bg=MODERN_COLORS['input_bg'],
+                                                   fg=MODERN_COLORS['text_primary'],
+                                                   insertbackground=MODERN_COLORS['primary'],
+                                                   selectbackground=MODERN_COLORS['primary'],
+                                                   selectforeground='white',
+                                                   relief='solid',
+                                                   borderwidth=1,
+                                                   highlightthickness=1,
+                                                   highlightbackground=MODERN_COLORS['input_border'],
+                                                   highlightcolor=MODERN_COLORS['primary'])
         # Nettoyer le body lors du chargement pour enlever les en-têtes
         body_raw = self.current_config.get("body", b"").decode("utf-8")
         # Enlever les en-têtes communs qui pourraient être dans le body
@@ -278,58 +652,213 @@ class EspooferGUI:
         # Nettoyer aussi les adresses email collées au début
         body_cleaned = re.sub(r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}', '', body_cleaned).strip()
         self.body_text.insert("1.0", body_cleaned)
-        self.body_text.grid(row=row, column=1, sticky=(tk.W, tk.E), pady=5)
-        row += 1
-        
-        ttk.Label(main_frame, text="Nom de l'Expéditeur:").grid(row=row, column=0, sticky=tk.W, pady=5)
+        self.body_text.grid(row=email_row+1, column=0, columnspan=2, sticky=(tk.W, tk.E), pady=(0, 8), padx=10)
+        email_row += 2
+        # Nom de l'Expéditeur et Email Expéditeur côte à côte
+        ttk.Label(self.email_section_frame, text="Nom de l'Expéditeur", font=('Segoe UI', 10)).grid(row=email_row, column=0, sticky=(tk.W, tk.N), pady=(8, 4), padx=10)
+        ttk.Label(self.email_section_frame, text="Email Expéditeur", font=('Segoe UI', 10)).grid(row=email_row, column=1, sticky=(tk.W, tk.N), pady=(8, 4), padx=10)
         self.sender_name_var = tk.StringVar(value=self.current_config.get("sender_name", b"").decode("utf-8"))
-        ttk.Entry(main_frame, textvariable=self.sender_name_var, width=40).grid(row=row, column=1, sticky=(tk.W, tk.E), pady=5)
-        row += 1
-        
-        ttk.Label(main_frame, text="Email Expéditeur:").grid(row=row, column=0, sticky=tk.W, pady=5)
+        ttk.Entry(self.email_section_frame, textvariable=self.sender_name_var, style='Modern.TEntry', font=('Segoe UI', 10)).grid(row=email_row+1, column=0, sticky=(tk.W, tk.E), pady=(0, 8), padx=10)
+        from_email_frame = ttk.Frame(self.email_section_frame, style='Card.TFrame')
+        from_email_frame.grid(row=email_row+1, column=1, sticky=(tk.W, tk.E), pady=(0, 8), padx=10)
+        from_email_frame.columnconfigure(0, weight=1)
         self.from_email_var = tk.StringVar(value=self.current_config.get("from_email", b"").decode("utf-8"))
-        ttk.Entry(main_frame, textvariable=self.from_email_var, width=40).grid(row=row, column=1, sticky=(tk.W, tk.E), pady=5)
-        row += 1
+        self.from_email_var.trace_add("write", self.on_from_email_change)
+        self.from_email_entry = ttk.Entry(from_email_frame, textvariable=self.from_email_var, style='Modern.TEntry', font=('Segoe UI', 10))
+        self.from_email_entry.grid(row=0, column=0, sticky=(tk.W, tk.E))
+        self.from_email_warning_label = tk.Label(from_email_frame, text="", 
+                                                foreground=MODERN_COLORS['warning'],
+                                                font=("Segoe UI", 8), 
+                                                bg=MODERN_COLORS['bg_secondary'])
+        self.from_email_warning_label.grid(row=1, column=0, sticky=tk.W)
+        email_row += 2
         
-        ttk.Label(main_frame, text="Répondre à:").grid(row=row, column=0, sticky=tk.W, pady=5)
+        ttk.Label(self.email_section_frame, text="Répondre à", font=('Segoe UI', 10)).grid(row=email_row, column=0, columnspan=2, sticky=tk.W, pady=(8, 4), padx=10)
         self.reply_to_var = tk.StringVar(value=self.current_config.get("reply_to", b"").decode("utf-8"))
-        ttk.Entry(main_frame, textvariable=self.reply_to_var, width=40).grid(row=row, column=1, sticky=(tk.W, tk.E), pady=5)
-        row += 1
+        ttk.Entry(self.email_section_frame, textvariable=self.reply_to_var, style='Modern.TEntry', font=('Segoe UI', 10)).grid(row=email_row+1, column=0, columnspan=2, sticky=(tk.W, tk.E), pady=(0, 8), padx=10)
+        email_row += 2
         
-        ttk.Label(main_frame, text="Email Brut:").grid(row=row, column=0, sticky=tk.W, pady=5)
-        self.raw_email_text = scrolledtext.ScrolledText(main_frame, width=40, height=3)
+        # Pièces jointes avec style moderne
+        ttk.Label(self.email_section_frame, text="📎 Pièces jointes", font=('Segoe UI', 10)).grid(row=email_row, column=0, columnspan=2, sticky=tk.W, pady=(8, 4), padx=10)
+        attachments_frame = ttk.Frame(self.email_section_frame, style='Card.TFrame')
+        attachments_frame.grid(row=email_row+1, column=0, columnspan=2, sticky=(tk.W, tk.E), pady=(0, 8), padx=10)
+        attachments_frame.columnconfigure(0, weight=1)
+        
+        # Liste des fichiers joints
+        self.attachments_list = []  # Liste des chemins de fichiers
+        self.attachments_listbox_frame = ttk.Frame(attachments_frame, style='Card.TFrame')
+        self.attachments_listbox_frame.grid(row=0, column=0, columnspan=2, sticky=(tk.W, tk.E), pady=(0, 8))
+        self.attachments_listbox_frame.columnconfigure(0, weight=1)
+        
+        scrollbar_att = ttk.Scrollbar(self.attachments_listbox_frame, style='TScrollbar')
+        scrollbar_att.grid(row=0, column=1, sticky=(tk.N, tk.S))
+        
+        self.attachments_listbox = tk.Listbox(self.attachments_listbox_frame, height=4, yscrollcommand=scrollbar_att.set,
+                                             font=('Segoe UI', 9),
+                                             bg=MODERN_COLORS['input_bg'],
+                                             fg=MODERN_COLORS['text_primary'],
+                                             selectbackground=MODERN_COLORS['primary'],
+                                             selectforeground='white',
+                                             relief='solid',
+                                             borderwidth=1,
+                                             highlightthickness=1,
+                                             highlightbackground=MODERN_COLORS['input_border'],
+                                             highlightcolor=MODERN_COLORS['primary'])
+        self.attachments_listbox.grid(row=0, column=0, sticky=(tk.W, tk.E))
+        scrollbar_att.config(command=self.attachments_listbox.yview)
+        
+        # Boutons pour gérer les pièces jointes avec style moderne
+        attachments_buttons_frame = ttk.Frame(attachments_frame, style='Card.TFrame')
+        attachments_buttons_frame.grid(row=1, column=0, columnspan=2, sticky=(tk.W, tk.E))
+        attachments_buttons_frame.columnconfigure(0, weight=1)
+        attachments_buttons_frame.columnconfigure(1, weight=1)
+        attachments_buttons_frame.columnconfigure(2, weight=1)
+        ttk.Button(attachments_buttons_frame, text="➕ Ajouter fichier...", command=self.add_attachment,
+                  style='Modern.TButton').grid(row=0, column=0, padx=(0, 5), sticky=(tk.W, tk.E))
+        ttk.Button(attachments_buttons_frame, text="➖ Supprimer", command=self.remove_attachment,
+                  style='Danger.TButton').grid(row=0, column=1, padx=5, sticky=(tk.W, tk.E))
+        ttk.Button(attachments_buttons_frame, text="🗑️ Tout supprimer", command=self.clear_attachments,
+                  style='Danger.TButton').grid(row=0, column=2, padx=(5, 0), sticky=(tk.W, tk.E))
+        email_row += 2
+        
+        ttk.Label(self.email_section_frame, text="📧 Email Brut", font=('Segoe UI', 10)).grid(row=email_row, column=0, columnspan=2, sticky=tk.W, pady=(8, 4), padx=10)
+        self.raw_email_text = scrolledtext.ScrolledText(self.email_section_frame, height=4, wrap=tk.WORD,
+                                                        font=('Segoe UI', 10),
+                                                        bg=MODERN_COLORS['input_bg'],
+                                                        fg=MODERN_COLORS['text_primary'],
+                                                        insertbackground=MODERN_COLORS['primary'],
+                                                        selectbackground=MODERN_COLORS['primary'],
+                                                        selectforeground='white',
+                                                        relief='solid',
+                                                        borderwidth=1,
+                                                        highlightthickness=1,
+                                                        highlightbackground=MODERN_COLORS['input_border'],
+                                                        highlightcolor=MODERN_COLORS['primary'])
         self.raw_email_text.insert("1.0", self.current_config.get("raw_email", b"").decode("utf-8"))
-        self.raw_email_text.grid(row=row, column=1, sticky=(tk.W, tk.E), pady=5)
-        row += 1
+        self.raw_email_text.grid(row=email_row+1, column=0, columnspan=2, sticky=(tk.W, tk.E), pady=(0, 8), padx=10)
+        left_row += 1
         
-        # Zone d'erreurs
-        ttk.Separator(main_frame, orient=tk.HORIZONTAL).grid(row=row, column=0, columnspan=2, sticky=(tk.W, tk.E), pady=10)
-        row += 1
-        ttk.Label(main_frame, text="Erreurs:", font=("Arial", 10, "bold")).grid(row=row, column=0, columnspan=2, sticky=tk.W, pady=5)
-        row += 1
-        self.error_text = scrolledtext.ScrolledText(main_frame, width=40, height=4, bg="#ffcccc", fg="#cc0000")
-        self.error_text.grid(row=row, column=0, columnspan=2, sticky=(tk.W, tk.E), pady=5)
-        row += 1
+        # Permettre à la colonne gauche de s'étirer verticalement
+        left_frame.rowconfigure(left_row, weight=1)
         
-        # Boutons
-        button_frame = ttk.Frame(main_frame)
-        button_frame.grid(row=row, column=0, columnspan=2, pady=20)
+        # ========== COLONNE DROITE : ERREURS, LOGS, BOUTONS ==========
+        right_row = 0
         
-        ttk.Button(button_frame, text="Valider", command=self.validate_config).pack(side=tk.LEFT, padx=5)
-        self.send_button = ttk.Button(button_frame, text="Envoyer l'Email", command=self.send_email)
-        self.send_button.pack(side=tk.LEFT, padx=5)
-        ttk.Button(button_frame, text="Effacer les Erreurs", command=self.clear_errors).pack(side=tk.LEFT, padx=5)
+        # Zone d'erreurs avec style moderne
+        error_section_frame = ttk.Frame(right_frame, style='Card.TFrame')
+        error_section_frame.grid(row=right_row, column=0, sticky=(tk.W, tk.E, tk.N), pady=(0, 15))
+        error_section_frame.columnconfigure(0, weight=1)
         
-        # Zone de log pour les résultats
-        row += 1
-        ttk.Label(main_frame, text="Journal:", font=("Arial", 10, "bold")).grid(row=row, column=0, columnspan=2, sticky=tk.W, pady=5)
-        row += 1
-        self.log_text = scrolledtext.ScrolledText(main_frame, width=40, height=6, bg="#f0f0f0")
-        self.log_text.grid(row=row, column=0, columnspan=2, sticky=(tk.W, tk.E, tk.N, tk.S), pady=5)
-        main_frame.rowconfigure(row, weight=1)
+        error_title = tk.Label(error_section_frame,
+                              text="⚠️ Erreurs",
+                              font=("Segoe UI", 12, "bold"),
+                              bg=MODERN_COLORS['bg_accent'],
+                              fg=MODERN_COLORS['danger'])
+        error_title.grid(row=0, column=0, sticky=tk.W, pady=(10, 8), padx=10)
+        
+        self.error_text = scrolledtext.ScrolledText(error_section_frame, height=6, 
+                                                   bg=MODERN_COLORS['bg_accent'], 
+                                                   fg=MODERN_COLORS['danger'],
+                                                   wrap=tk.WORD, font=("Segoe UI", 9),
+                                                   relief='flat', borderwidth=0,
+                                                   insertbackground=MODERN_COLORS['danger'],
+                                                   selectbackground=MODERN_COLORS['danger'],
+                                                   selectforeground='white')
+        self.error_text.grid(row=1, column=0, sticky=(tk.W, tk.E), pady=(0, 10), padx=10)
+        right_row += 1
+        
+        # Zone d'avertissements et conseils avec style moderne
+        tips_section_frame = ttk.Frame(right_frame, style='Card.TFrame')
+        tips_section_frame.grid(row=right_row, column=0, sticky=(tk.W, tk.E), pady=(0, 15))
+        tips_section_frame.columnconfigure(0, weight=1)
+        
+        tips_label = tk.Label(tips_section_frame,
+                             text="💡 Conseils pour éviter les blocages",
+                             font=("Segoe UI", 12, "bold"),
+                             bg=MODERN_COLORS['bg_accent'],
+                             fg=MODERN_COLORS['warning'])
+        tips_label.grid(row=0, column=0, sticky=tk.W, pady=(10, 8), padx=10)
+        
+        tips_text = """• Évitez d'usurper des domaines avec DMARC strict (gmail.com, yahoo.com, outlook.com, etc.)
+• Utilisez un domaine que vous contrôlez ou qui n'a pas de politique DMARC stricte
+• En mode client, utilisez un serveur SMTP légitime avec authentification
+• Les emails vers Gmail sont souvent filtrés - vérifiez le dossier spam
+• Testez avec différents cas de test (A1-A19) pour contourner certaines protections"""
+        self.tips_text_widget = scrolledtext.ScrolledText(tips_section_frame, height=5, 
+                                                          bg=MODERN_COLORS['bg_accent'], 
+                                                          fg=MODERN_COLORS['text_primary'],
+                                                          wrap=tk.WORD, font=("Segoe UI", 9),
+                                                          relief='flat', borderwidth=0,
+                                                          insertbackground=MODERN_COLORS['warning'],
+                                                          selectbackground=MODERN_COLORS['warning'],
+                                                          selectforeground=MODERN_COLORS['bg_primary'])
+        self.tips_text_widget.insert("1.0", tips_text)
+        self.tips_text_widget.config(state=tk.DISABLED)  # Lecture seule
+        self.tips_text_widget.grid(row=1, column=0, sticky=(tk.W, tk.E), pady=(0, 10), padx=10)
+        right_row += 1
+        
+        # Boutons avec style moderne
+        button_frame = ttk.Frame(right_frame, style='Card.TFrame')
+        button_frame.grid(row=right_row, column=0, pady=(0, 15), sticky=(tk.W, tk.E))
+        button_frame.columnconfigure(0, weight=1)
+        
+        buttons_inner_frame = ttk.Frame(button_frame, style='Card.TFrame')
+        buttons_inner_frame.grid(row=0, column=0, sticky=(tk.W, tk.E), padx=10)
+        buttons_inner_frame.columnconfigure(0, weight=1)
+        buttons_inner_frame.columnconfigure(1, weight=1)
+        
+        ttk.Button(buttons_inner_frame, text="✓ Valider", command=self.validate_config, 
+                  style='Success.TButton').grid(row=0, column=0, padx=(0, 5), sticky=(tk.W, tk.E))
+        self.send_button = ttk.Button(buttons_inner_frame, text="📧 Envoyer l'Email", command=self.send_email,
+                                      style='Modern.TButton')
+        self.send_button.grid(row=0, column=1, padx=(5, 0), sticky=(tk.W, tk.E))
+        
+        buttons_inner_frame2 = ttk.Frame(button_frame, style='Card.TFrame')
+        buttons_inner_frame2.grid(row=1, column=0, sticky=(tk.W, tk.E), pady=(5, 0), padx=10)
+        buttons_inner_frame2.columnconfigure(0, weight=1)
+        buttons_inner_frame2.columnconfigure(1, weight=1)
+        
+        ttk.Button(buttons_inner_frame2, text="🗑️ Effacer les Erreurs", command=self.clear_errors,
+                  style='Danger.TButton').grid(row=0, column=0, padx=(0, 5), sticky=(tk.W, tk.E))
+        ttk.Button(buttons_inner_frame2, text="🗑️ Vider les Logs", command=self.clear_logs,
+                  style='Danger.TButton').grid(row=0, column=1, padx=(5, 0), sticky=(tk.W, tk.E))
+        right_row += 1
+        
+        # Zone de log pour les résultats avec style moderne
+        log_section_frame = ttk.Frame(right_frame, style='Card.TFrame')
+        log_section_frame.grid(row=right_row, column=0, sticky=(tk.W, tk.E, tk.N, tk.S), pady=(0, 10))
+        log_section_frame.columnconfigure(0, weight=1)
+        log_section_frame.rowconfigure(1, weight=1)
+        
+        log_title = tk.Label(log_section_frame,
+                            text="📊 Journal",
+                            font=("Segoe UI", 12, "bold"),
+                            bg=MODERN_COLORS['bg_accent'],
+                            fg=MODERN_COLORS['text_primary'])
+        log_title.grid(row=0, column=0, sticky=tk.W, pady=(10, 8), padx=10)
+        
+        self.log_text = scrolledtext.ScrolledText(log_section_frame, height=10, 
+                                                  bg=MODERN_COLORS['bg_accent'], 
+                                                  wrap=tk.WORD,
+                                                  font=("Segoe UI", 9),
+                                                  fg=MODERN_COLORS['text_primary'],
+                                                  insertbackground=MODERN_COLORS['primary'],
+                                                  selectbackground=MODERN_COLORS['primary'],
+                                                  selectforeground='white',
+                                                  relief='flat',
+                                                  borderwidth=0)
+        self.log_text.grid(row=1, column=0, sticky=(tk.W, tk.E, tk.N, tk.S), pady=(0, 10), padx=10)
+        # Permettre au log de s'étirer verticalement
+        right_frame.rowconfigure(right_row, weight=1)
+        main_frame.rowconfigure(0, weight=1)
+        scrollable_frame.rowconfigure(0, weight=1)
         
         # Initialiser la visibilité selon le mode par défaut
         self.on_mode_change()
+        
+        # Initialiser les avertissements pour les champs existants
+        self.on_from_email_change()
+        self.on_victim_address_change()
         
     def on_case_selected(self, event=None):
         """Met à jour le case_id interne quand une description est sélectionnée"""
@@ -339,14 +868,100 @@ class EspooferGUI:
             # Mettre à jour la variable interne (mais pas l'affichage)
             self.case_id_var.set(actual_case_id)
     
+    def on_from_email_change(self, *args):
+        """Affiche un avertissement si l'email expéditeur utilise un domaine avec DMARC strict"""
+        from_email = self.from_email_var.get().strip()
+        if from_email:
+            domain = self.extract_domain(from_email)
+            warning = self.check_dmarc_strict_domain(domain)
+            if warning:
+                self.from_email_warning_label.config(text=f"⚠ {warning}", foreground="orange")
+            else:
+                self.from_email_warning_label.config(text="")
+        else:
+            self.from_email_warning_label.config(text="")
+    
+    def on_victim_address_change(self, *args):
+        """Affiche un avertissement si l'adresse victime est Gmail"""
+        victim_address = self.victim_address_var.get().strip()
+        if victim_address:
+            domain = self.extract_domain(victim_address)
+            if domain.lower() in ['gmail.com', 'googlemail.com']:
+                self.victim_address_warning_label.config(
+                    text="⚠ Gmail a des protections DMARC strictes - certains emails peuvent être bloqués", 
+                    foreground="orange"
+                )
+            else:
+                self.victim_address_warning_label.config(text="")
+        else:
+            self.victim_address_warning_label.config(text="")
+    
+    def extract_domain(self, email):
+        """Extrait le domaine d'une adresse email"""
+        if '@' in email:
+            return email.split('@')[1].strip().lower()
+        return ""
+    
+    def check_dmarc_strict_domain(self, domain):
+        """Vérifie si un domaine a des politiques DMARC strictes connues"""
+        strict_domains = {
+            'gmail.com': 'Gmail bloque les emails spoofés de gmail.com (DMARC p=reject)',
+            'googlemail.com': 'Google bloque les emails spoofés de googlemail.com (DMARC p=reject)',
+            'yahoo.com': 'Yahoo bloque souvent les emails spoofés (DMARC p=reject)',
+            'yahoo.fr': 'Yahoo bloque souvent les emails spoofés (DMARC p=reject)',
+            'outlook.com': 'Outlook/Microsoft bloque souvent les emails spoofés (DMARC p=reject)',
+            'hotmail.com': 'Hotmail/Microsoft bloque souvent les emails spoofés (DMARC p=reject)',
+            'live.com': 'Microsoft bloque souvent les emails spoofés (DMARC p=reject)',
+            'msn.com': 'Microsoft bloque souvent les emails spoofés (DMARC p=reject)',
+            'aol.com': 'AOL bloque souvent les emails spoofés (DMARC p=reject)',
+            'apple.com': 'Apple bloque souvent les emails spoofés (DMARC p=reject)',
+            'icloud.com': 'iCloud bloque souvent les emails spoofés (DMARC p=reject)',
+            'protonmail.com': 'ProtonMail bloque souvent les emails spoofés (DMARC p=reject)',
+            'proton.me': 'ProtonMail bloque souvent les emails spoofés (DMARC p=reject)',
+        }
+        return strict_domains.get(domain.lower(), None)
+    
+    def add_attachment(self):
+        """Ouvre un dialogue pour sélectionner un fichier à joindre"""
+        from tkinter import filedialog
+        file_paths = filedialog.askopenfilenames(
+            title="Sélectionner des fichiers à joindre",
+            filetypes=[
+                ("Tous les fichiers", "*.*"),
+                ("Documents", "*.pdf;*.doc;*.docx;*.txt"),
+                ("Images", "*.jpg;*.jpeg;*.png;*.gif"),
+                ("Archives", "*.zip;*.rar;*.7z"),
+            ]
+        )
+        for file_path in file_paths:
+            if file_path and file_path not in self.attachments_list:
+                self.attachments_list.append(file_path)
+                # Afficher seulement le nom du fichier dans la liste
+                import os
+                filename = os.path.basename(file_path)
+                self.attachments_listbox.insert(tk.END, filename)
+    
+    def remove_attachment(self):
+        """Supprime la pièce jointe sélectionnée"""
+        selection = self.attachments_listbox.curselection()
+        if selection:
+            index = selection[0]
+            self.attachments_listbox.delete(index)
+            self.attachments_list.pop(index)
+    
+    def clear_attachments(self):
+        """Supprime toutes les pièces jointes"""
+        self.attachments_listbox.delete(0, tk.END)
+        self.attachments_list.clear()
+    
     def on_mode_change(self):
         """Met à jour la visibilité des sections selon le mode sélectionné"""
         mode = self.mode_var.get()
         
-        # Widgets du mode serveur
+        # Widgets du mode serveur (utiliser les frames de section stockés)
         server_widgets = [
             self.server_separator,
-            self.server_mode_label,
+            self.server_section_frame,
             self.attacker_site_label,
             self.attacker_site_entry,
             self.recv_mail_server_label,
@@ -359,7 +974,7 @@ class EspooferGUI:
         # Widgets du mode client
         client_widgets = [
             self.client_separator,
-            self.client_mode_label,
+            self.client_section_frame,
             self.sending_server_label,
             self.sending_server_frame,
             self.username_label,
@@ -409,6 +1024,10 @@ class EspooferGUI:
         """Efface les erreurs affichées"""
         self.error_text.delete("1.0", tk.END)
         self.errors = []
+    
+    def clear_logs(self):
+        """Vide le journal des logs"""
+        self.log_text.delete("1.0", tk.END)
         
     def log(self, message):
         """Ajoute un message au log (thread-safe)"""
@@ -575,6 +1194,7 @@ class EspooferGUI:
             "from_email": self.from_email_var.get().encode("utf-8"),
             "reply_to": self.reply_to_var.get().strip().encode("utf-8") if self.reply_to_var.get().strip() else b"",
             "raw_email": self.raw_email_text.get("1.0", tk.END).strip().encode("utf-8"),
+            "attachments": self.attachments_list.copy(),  # Liste des chemins de fichiers à joindre
         }
         return config_dict
     
@@ -766,6 +1386,15 @@ class EspooferGUI:
 def main():
     root = tk.Tk()
     app = EspooferGUI(root)
+    
+    # Vérifier les mises à jour au démarrage (en arrière-plan)
+    try:
+        from updater import check_updates_in_background
+        check_updates_in_background(root, show_no_update=False)
+    except ImportError:
+        # Si le module updater n'est pas disponible, continuer sans vérification
+        pass
+    
     root.mainloop()
 
 if __name__ == '__main__':

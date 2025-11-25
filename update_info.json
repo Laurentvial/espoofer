@@ -1,0 +1,27 @@
+{
+  "version": "1.0.0",
+  "release_date": "2024-01-01",
+  "changelog": "Version initiale avec interface graphique en français",
+  "download_url": "https://github.com/votre-repo/espoofer/releases/download/v1.0.0/Espoofer_v1.0.0_windows.zip",
+  "size": "~5 MB",
+  "min_python_version": "3.7",
+  "platforms": {
+    "windows": {
+      "download_url": "https://github.com/votre-repo/espoofer/releases/download/v1.0.0/Espoofer_v1.0.0_windows.zip",
+      "size": "~5 MB"
+    },
+    "linux": {
+      "download_url": "https://github.com/votre-repo/espoofer/releases/download/v1.0.0/Espoofer_v1.0.0_linux.zip",
+      "size": "~5 MB"
+    },
+    "darwin": {
+      "download_url": "https://github.com/votre-repo/espoofer/releases/download/v1.0.0/Espoofer_v1.0.0_darwin.zip",
+      "size": "~5 MB"
+    }
+  },
+  "checksum": {
+    "md5": "exemple_md5_hash",
+    "sha256": "exemple_sha256_hash"
+  }
+}
+
