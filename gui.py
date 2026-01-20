@@ -6,6 +6,7 @@ from tkinter import ttk, messagebox, scrolledtext
 import threading
 import sys
 import re
+import copy
 
 # Import des modules existants
 import config
@@ -1295,7 +1296,9 @@ Utilisez-le de manière responsable et légale.
                 
                 self.log(f"Connexion au serveur : {mail_server}:{mail_server_port}")
                 
-                exploits_builder = ExploitsBuilder(testcases.test_cases, config_dict)
+                # Create a deep copy of test cases to avoid modifying the original
+                test_cases_copy = copy.deepcopy(testcases.test_cases)
+                exploits_builder = ExploitsBuilder(test_cases_copy, config_dict)
                 smtp_seqs = exploits_builder.generate_smtp_seqs()
                 
                 msg_content = config_dict["raw_email"] if config_dict["raw_email"] else smtp_seqs["msg_content"]
@@ -1354,7 +1357,9 @@ Utilisez-le de manière responsable et légale.
                 
                 self.log(f"Connexion au serveur : {mail_server[0]}:{mail_server[1]}")
                 
-                exploits_builder = ExploitsBuilder(testcases.test_cases, config_dict)
+                # Create a deep copy of test cases to avoid modifying the original
+                test_cases_copy = copy.deepcopy(testcases.test_cases)
+                exploits_builder = ExploitsBuilder(test_cases_copy, config_dict)
                 smtp_seqs = exploits_builder.generate_smtp_seqs()
                 
                 msg_content = config_dict["raw_email"] if config_dict["raw_email"] else smtp_seqs["msg_content"]
