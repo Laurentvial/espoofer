@@ -450,15 +450,10 @@ Utilisez-le de manière responsable et légale.
         self.attacker_site_entry.grid(row=gen_row+1, column=0, sticky=(tk.W, tk.E), pady=(0, 8), padx=10)
         gen_row += 2
         
-        # Legitimate Site Address et Victim Address côte à côte
-        ttk.Label(self.general_section_frame, text="✅ Adresse du Site Légitime", font=('Segoe UI', 10)).grid(row=gen_row, column=0, sticky=(tk.W, tk.N), pady=(8, 4), padx=10)
-        ttk.Label(self.general_section_frame, text="👤 Adresse de la Victime", font=('Segoe UI', 10)).grid(row=gen_row, column=1, sticky=(tk.W, tk.N), pady=(8, 4), padx=10)
-        self.legitimate_site_var = tk.StringVar(value=self.current_config.get("legitimate_site_address", b"").decode("utf-8"))
-        ttk.Entry(self.general_section_frame, textvariable=self.legitimate_site_var,
-                 style='Modern.TEntry', font=('Segoe UI', 10)).grid(row=gen_row+1, column=0, sticky=(tk.W, tk.E), pady=(0, 8), padx=10)
-        
+        # Victim Address
+        ttk.Label(self.general_section_frame, text="👤 Adresse de la Victime", font=('Segoe UI', 10)).grid(row=gen_row, column=0, sticky=tk.W, pady=(8, 4), padx=10)
         victim_frame = ttk.Frame(self.general_section_frame, style='Card.TFrame')
-        victim_frame.grid(row=gen_row+1, column=1, sticky=(tk.W, tk.E), pady=(0, 8), padx=10)
+        victim_frame.grid(row=gen_row+1, column=0, sticky=(tk.W, tk.E), pady=(0, 8), padx=10)
         victim_frame.columnconfigure(0, weight=1)
         self.victim_address_var = tk.StringVar(value=self.current_config.get("victim_address", b"").decode("utf-8"))
         self.victim_address_var.trace_add("write", self.on_victim_address_change)
@@ -516,7 +511,7 @@ Utilisez-le de manière responsable et légale.
         self.starttls_checkbutton.grid(row=server_row, column=0, sticky=tk.W, pady=(8, 8), padx=10)
         left_row += 1
         
-        # Section Client Mode avec style moderne
+        # Section Client Mode avec style moderne (collapsible)
         self.client_separator = ttk.Separator(left_frame, orient=tk.HORIZONTAL)
         self.client_separator.grid(row=left_row, column=0, sticky=(tk.W, tk.E), pady=20)
         left_row += 1
@@ -526,19 +521,56 @@ Utilisez-le de manière responsable et légale.
         self.client_section_frame.columnconfigure(0, weight=1)
         self.client_section_frame.columnconfigure(1, weight=1)
         
-        self.client_mode_label = tk.Label(self.client_section_frame,
+        # Title frame with toggle button
+        self.client_title_frame = tk.Frame(self.client_section_frame, bg=MODERN_COLORS['bg_secondary'])
+        self.client_title_frame.grid(row=0, column=0, columnspan=2, sticky=(tk.W, tk.E), pady=(10, 0), padx=10)
+        
+        # Toggle indicator (collapsed by default)
+        self.client_collapsed = True
+        self.client_toggle_indicator = tk.Label(self.client_title_frame,
+                                               text="▶",
+                                               font=("Segoe UI", 10),
+                                               bg=MODERN_COLORS['bg_secondary'],
+                                               fg=MODERN_COLORS['primary'],
+                                               cursor="hand2")
+        self.client_toggle_indicator.grid(row=0, column=0, padx=(0, 5))
+        
+        self.client_mode_label = tk.Label(self.client_title_frame,
                                          text="💻 Configuration Mode Client",
                                          font=("Segoe UI", 13, "bold"),
                                          bg=MODERN_COLORS['bg_secondary'],
-                                         fg=MODERN_COLORS['primary'])
-        self.client_mode_label.grid(row=0, column=0, sticky=tk.W, pady=(10, 15), padx=10)
+                                         fg=MODERN_COLORS['primary'],
+                                         cursor="hand2")
+        self.client_mode_label.grid(row=0, column=1, sticky=tk.W, pady=(10, 15))
         
-        client_row = 1
+        # Bind click events to toggle
+        self.client_toggle_indicator.bind("<Button-1>", lambda e: self.toggle_client_section())
+        self.client_mode_label.bind("<Button-1>", lambda e: self.toggle_client_section())
+        
+        # Content frame (collapsible)
+        self.client_content_frame = ttk.Frame(self.client_section_frame, style='Card.TFrame')
+        # Hide by default (folded)
+        self.client_content_frame.grid(row=1, column=0, columnspan=2, sticky=(tk.W, tk.E))
+        self.client_content_frame.columnconfigure(0, weight=1)
+        self.client_content_frame.columnconfigure(1, weight=1)
+        self.client_content_frame.grid_remove()  # Hide by default
+        
+        client_row = 0
         client_mode = self.current_config.get("client_mode", {})
+        
+        # Legitimate Site Address (moved to client section)
+        self.legitimate_site_label = ttk.Label(self.client_content_frame, text="✅ Adresse du Site Légitime", font=('Segoe UI', 10))
+        self.legitimate_site_label.grid(row=client_row, column=0, columnspan=2, sticky=tk.W, pady=(8, 4), padx=10)
+        self.legitimate_site_var = tk.StringVar(value=self.current_config.get("legitimate_site_address", b"").decode("utf-8"))
+        self.legitimate_site_entry = ttk.Entry(self.client_content_frame, textvariable=self.legitimate_site_var,
+                 style='Modern.TEntry', font=('Segoe UI', 10))
+        self.legitimate_site_entry.grid(row=client_row+1, column=0, columnspan=2, sticky=(tk.W, tk.E), pady=(0, 8), padx=10)
+        client_row += 2
+        
         sending_server = client_mode.get("sending_server", ("", 587))
-        self.sending_server_label = ttk.Label(self.client_section_frame, text="📤 Serveur d'Envoi", font=('Segoe UI', 10))
+        self.sending_server_label = ttk.Label(self.client_content_frame, text="📤 Serveur d'Envoi", font=('Segoe UI', 10))
         self.sending_server_label.grid(row=client_row, column=0, sticky=tk.W, pady=(8, 4), padx=10)
-        self.sending_server_frame = ttk.Frame(self.client_section_frame, style='Card.TFrame')
+        self.sending_server_frame = ttk.Frame(self.client_content_frame, style='Card.TFrame')
         self.sending_server_frame.grid(row=client_row+1, column=0, sticky=(tk.W, tk.E), pady=(0, 8), padx=10)
         self.sending_server_frame.columnconfigure(0, weight=3)
         self.sending_server_frame.columnconfigure(2, weight=1)
@@ -556,18 +588,18 @@ Utilisez-le de manière responsable et légale.
         client_row += 2
         
         # Nom d'utilisateur et Mot de passe côte à côte
-        self.username_label = ttk.Label(self.client_section_frame, text="👤 Nom d'utilisateur", font=('Segoe UI', 10))
+        self.username_label = ttk.Label(self.client_content_frame, text="👤 Nom d'utilisateur", font=('Segoe UI', 10))
         self.username_label.grid(row=client_row, column=0, sticky=(tk.W, tk.N), pady=(8, 4), padx=10)
-        self.password_label = ttk.Label(self.client_section_frame, text="🔑 Mot de passe", font=('Segoe UI', 10))
+        self.password_label = ttk.Label(self.client_content_frame, text="🔑 Mot de passe", font=('Segoe UI', 10))
         self.password_label.grid(row=client_row, column=1, sticky=(tk.W, tk.N), pady=(8, 4), padx=10)
         
         self.username_var = tk.StringVar(value=client_mode.get("username", b"").decode("utf-8"))
-        self.username_entry = ttk.Entry(self.client_section_frame, textvariable=self.username_var,
+        self.username_entry = ttk.Entry(self.client_content_frame, textvariable=self.username_var,
                                        style='Modern.TEntry', font=('Segoe UI', 10))
         self.username_entry.grid(row=client_row+1, column=0, sticky=(tk.W, tk.E), pady=(0, 8), padx=10)
         
         self.password_var = tk.StringVar(value=client_mode.get("password", b"").decode("utf-8"))
-        self.password_entry = ttk.Entry(self.client_section_frame, textvariable=self.password_var, show="*",
+        self.password_entry = ttk.Entry(self.client_content_frame, textvariable=self.password_var, show="*",
                                        style='Modern.TEntry', font=('Segoe UI', 10))
         self.password_entry.grid(row=client_row+1, column=1, sticky=(tk.W, tk.E), pady=(0, 8), padx=10)
         client_row += 2
@@ -896,6 +928,18 @@ Utilisez-le de manière responsable et légale.
         else:
             self.victim_address_warning_label.config(text="")
     
+    def toggle_client_section(self):
+        """Toggle la visibilité de la section Configuration Mode Client"""
+        self.client_collapsed = not self.client_collapsed
+        if self.client_collapsed:
+            # Collapse: hide content, show ▶
+            self.client_content_frame.grid_remove()
+            self.client_toggle_indicator.config(text="▶")
+        else:
+            # Expand: show content, show ▼
+            self.client_content_frame.grid()
+            self.client_toggle_indicator.config(text="▼")
+    
     def extract_domain(self, email):
         """Extrait le domaine d'une adresse email"""
         if '@' in email:
@@ -971,16 +1015,10 @@ Utilisez-le de manière responsable et légale.
             self.starttls_checkbutton
         ]
         
-        # Widgets du mode client
+        # Widgets du mode client (only the section frame, content is controlled by toggle)
         client_widgets = [
             self.client_separator,
-            self.client_section_frame,
-            self.sending_server_label,
-            self.sending_server_frame,
-            self.username_label,
-            self.username_entry,
-            self.password_label,
-            self.password_entry
+            self.client_section_frame
         ]
         
         if mode == "s":  # Mode serveur
